@@ -16,6 +16,7 @@
             --primary-soft: #eef2ff;
             --success: #10b981; 
             --danger: #ef4444; 
+            --warning: #f59e0b;
             --bg: #f8fafc; 
             --sidebar: #0f172a; 
             --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -31,7 +32,6 @@
             color: #1e293b;
         }
         
-        /* Sidebar Styling */
         .sidebar { 
             width: 280px; 
             background: var(--sidebar); 
@@ -85,10 +85,6 @@
             transition: all 0.2s;
         }
 
-        select:hover { background: rgba(255,255,255,0.12); }
-        select option { background: #1e293b; color: white; }
-
-        /* Main Content Styling */
         .main-content { 
             flex-grow: 1; 
             padding: 30px; 
@@ -125,29 +121,20 @@
         }
 
         .nav-active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .nav-btn:hover:not(.nav-active) { color: var(--sidebar); }
 
-        /* KPI Card Styling */
-        .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        /* KPI Card Styling - Diubah menjadi 4 kolom */
+        .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
         .kpi-card { 
             background: white; 
             padding: 20px; 
             border-radius: 16px; 
             box-shadow: var(--card-shadow);
             border: 1px solid #f1f5f9;
-            transition: transform 0.2s;
         }
-        .kpi-card:hover { transform: translateY(-3px); }
-        .kpi-card h4 { margin: 0; color: #64748b; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.025em; }
-        .kpi-card p { margin: 8px 0 0; font-size: 1.8rem; font-weight: 800; display: flex; align-items: baseline; gap: 8px; }
-        .kpi-card .pct-badge { 
-            font-size: 0.85rem; 
-            font-weight: 600; 
-            padding: 4px 8px; 
-            border-radius: 6px;
-        }
+        .kpi-card h4 { margin: 0; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+        .kpi-card p { margin: 8px 0 0; font-size: 1.6rem; font-weight: 800; display: flex; align-items: baseline; gap: 8px; }
+        .kpi-card .pct-badge { font-size: 0.8rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
 
-        /* Chart & Table Container */
         .card { 
             background: white; 
             border-radius: 16px; 
@@ -175,29 +162,12 @@
             border-bottom: 2px solid #f1f5f9; 
             text-align: center;
             color: #64748b;
-            font-weight: 700;
-            text-transform: uppercase;
         }
         td { padding: 14px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-        tr:hover td { background: #f1f5f9; }
-        
-        .sticky-col { 
-            position: sticky; 
-            left: 0; 
-            background: white !important; 
-            z-index: 5; 
-            font-weight: 600; 
-            border-right: 2px solid #f1f5f9 !important; 
-            color: var(--sidebar);
-        }
-        
-        .pct-label { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
-        
-        /* Cohort Sisa Heatmap Colors */
-        .cohort-table td { width: 40px; }
+        .sticky-col { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 2px solid #f1f5f9 !important; font-weight: 600; }
+        .pct-label { font-size: 0.75rem; color: #94a3b8; }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
@@ -230,7 +200,7 @@
             <h1 style="font-size: 1.5rem; margin: 0; font-weight: 700;">Dashboard Monitoring</h1>
             <div class="nav-tabs">
                 <button onclick="switchPage(1)" id="btn1" class="nav-btn nav-active">Monitoring</button>
-                <button onclick="switchPage(2)" id="btn2" class="nav-btn nav-inactive">Cohort Sisa</button>
+                <button onclick="switchPage(2)" id="btn2" class="nav-btn">Cohort Sisa</button>
             </div>
         </div>
 
@@ -242,11 +212,15 @@
                 </div>
                 <div class="kpi-card">
                     <h4>Active</h4>
-                    <p style="color: var(--success)"><span id="statActive">0</span> <span id="statActivePct" class="pct-badge" style="background:#d1fae5; font-size:0.8rem">0%</span></p>
+                    <p style="color: var(--success)"><span id="statActive">0</span> <span id="statActivePct" class="pct-badge" style="background:#d1fae5">0%</span></p>
                 </div>
                 <div class="kpi-card">
                     <h4>Churn</h4>
-                    <p style="color: var(--danger)"><span id="statChurn">0</span> <span id="statChurnPct" class="pct-badge" style="background:#fee2e2; font-size:0.8rem">0%</span></p>
+                    <p style="color: var(--danger)"><span id="statChurn">0</span> <span id="statChurnPct" class="pct-badge" style="background:#fee2e2">0%</span></p>
+                </div>
+                <div class="kpi-card">
+                    <h4>Outstanding (Sisa)</h4>
+                    <p style="color: var(--primary)"><span id="statOutstanding">0</span> <span id="statOutPct" class="pct-badge" style="background:var(--primary-soft)">0%</span></p>
                 </div>
             </div>
             
@@ -261,6 +235,7 @@
                             <th class="sticky-col">Frozen Date</th>
                             <th>Active</th>
                             <th>Churn</th>
+                            <th>Outstanding</th>
                             <th>Total Freeze</th>
                         </tr>
                     </thead>
@@ -354,10 +329,14 @@
             const agg = {};
             filtered.forEach(r => {
                 const k = r._fmt;
-                if(!agg[k]) agg[k] = { label: k, active: 0, churn: 0, total: 0, sisa: Array(31).fill(0), raw: r._d };
+                if(!agg[k]) agg[k] = { label: k, active: 0, churn: 0, total: 0, out: 0, sisa: Array(31).fill(0), raw: r._d };
+                
                 agg[k].total++;
-                if((r['Customer Status']||'').toLowerCase() === 'active') agg[k].active++;
-                if((r['Customer Status']||'').toLowerCase() === 'churn') agg[k].churn++;
+                const status = (r['Customer Status'] || '').toLowerCase();
+                if(status === 'active') agg[k].active++;
+                else if(status === 'churn') agg[k].churn++;
+                else agg[k].out++; // Jika bukan active/churn berarti masih sisa (outstanding)
+
                 for(let i=0; i<=30; i++) if(r['Frozen (H+Paid)'] === undefined || r['Frozen (H+Paid)'] === null || r['Frozen (H+Paid)'] > i) agg[k].sisa[i]++;
             });
 
@@ -369,20 +348,21 @@
         function renderPage1(data) {
             const tb = document.getElementById('tableBody1');
             tb.innerHTML = "";
-            let sums = {a:0, c:0, t:0}, labels = [], dAct = [], dChr = [];
+            let sums = {a:0, c:0, t:0, o:0}, labels = [], dAct = [], dChr = [];
 
-            data.forEach(d => { sums.a += d.active; sums.c += d.churn; sums.t += d.total; });
+            data.forEach(d => { sums.a += d.active; sums.c += d.churn; sums.t += d.total; sums.o += d.out; });
 
             data.forEach(d => {
                 labels.push(d.label); dAct.push(d.active); dChr.push(d.churn);
-
                 const pA = d.total > 0 ? ((d.active/d.total)*100).toFixed(0) : 0;
                 const pC = d.total > 0 ? ((d.churn/d.total)*100).toFixed(0) : 0;
+                const pO = d.total > 0 ? ((d.out/d.total)*100).toFixed(0) : 0;
 
                 tb.innerHTML += `<tr>
                     <td class="sticky-col">${d.label}</td>
                     <td>${d.active.toLocaleString()} <span class="pct-label">(${pA}%)</span></td>
                     <td>${d.churn.toLocaleString()} <span class="pct-label">(${pC}%)</span></td>
+                    <td>${d.out.toLocaleString()} <span class="pct-label">(${pO}%)</span></td>
                     <td style="font-weight:700">${d.total.toLocaleString()}</td>
                 </tr>`;
             });
@@ -390,11 +370,15 @@
             document.getElementById('statTotal').innerText = sums.t.toLocaleString();
             document.getElementById('statActive').innerText = sums.a.toLocaleString();
             document.getElementById('statChurn').innerText = sums.c.toLocaleString();
+            document.getElementById('statOutstanding').innerText = sums.o.toLocaleString();
             
             const totalActPct = sums.t > 0 ? ((sums.a/sums.t)*100).toFixed(1) : 0;
             const totalChrPct = sums.t > 0 ? ((sums.c/sums.t)*100).toFixed(1) : 0;
+            const totalOutPct = sums.t > 0 ? ((sums.o/sums.t)*100).toFixed(1) : 0;
+            
             document.getElementById('statActivePct').innerText = totalActPct + '%';
             document.getElementById('statChurnPct').innerText = totalChrPct + '%';
+            document.getElementById('statOutPct').innerText = totalOutPct + '%';
 
             const ctx = document.getElementById('mainChart').getContext('2d');
             if(mainChart) mainChart.destroy();
@@ -403,14 +387,14 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Active', data: dAct, borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.3, fill: false, pointRadius: 4, pointHoverRadius: 6 },
-                        { label: 'Churn', data: dChr, borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3, fill: false, pointRadius: 4, pointHoverRadius: 6 }
+                        { label: 'Active', data: dAct, borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.3, fill: false, pointRadius: 4 },
+                        { label: 'Churn', data: dChr, borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3, fill: false, pointRadius: 4 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true, font: { weight: '600' } } },
+                        legend: { position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true } },
                         datalabels: {
                             align: 'top', offset: 8, color: '#64748b', font: { weight: 'bold', size: 10 },
                             formatter: (val, ctx) => {
@@ -420,8 +404,8 @@
                         }
                     },
                     scales: {
-                        y: { grid: { borderDash: [5, 5] }, ticks: { font: { family: 'Inter' } } },
-                        x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } }
+                        y: { grid: { borderDash: [5, 5] } },
+                        x: { grid: { display: false } }
                     }
                 }
             });
@@ -446,8 +430,8 @@
         function switchPage(p) {
             document.getElementById('page1').style.display = p === 1 ? 'block' : 'none';
             document.getElementById('page2').style.display = p === 2 ? 'block' : 'none';
-            document.getElementById('btn1').className = `nav-btn ${p === 1 ? 'nav-active' : 'nav-inactive'}`;
-            document.getElementById('btn2').className = `nav-btn ${p === 2 ? 'nav-active' : 'nav-inactive'}`;
+            document.getElementById('btn1').className = `nav-btn ${p === 1 ? 'nav-active' : ''}`;
+            document.getElementById('btn2').className = `nav-btn ${p === 2 ? 'nav-active' : ''}`;
         }
 
         window.onload = initData;

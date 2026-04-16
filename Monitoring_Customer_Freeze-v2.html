@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Analytics - Customer Freeze</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { 
+            --primary: #6366f1; 
+            --primary-light: rgba(99, 102, 241, 0.1);
+            --success: #10b981; 
+            --danger: #f43f5e; 
+            --warning: #f59e0b;
+            --bg: #fdfdfd; 
+            --sidebar: #0f172a; 
+            --card-shadow: 0 10px 15px -3px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02);
+            --card-border: 1px solid rgba(241, 245, 249, 1);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #f8fafc; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            color: #334155; 
+        }
+
+        /* Sidebar Styling */
+        .sidebar { 
+            width: 280px; 
+            background: var(--sidebar); 
+            color: white; 
+            padding: 30px 24px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 24px; 
+            z-index: 100;
+        }
+        .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+        .logo span { color: var(--primary); }
+        
+        .status-box { 
+            padding: 14px; 
+            border-radius: 12px; 
+            background: rgba(255,255,255,0.03); 
+            font-size: 0.8rem; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            color: #94a3b8; 
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-group label { 
+            font-size: 0.75rem; 
+            color: #64748b; 
+            font-weight: 700; 
+            margin-bottom: 8px; 
+            display: block; 
+            text-transform: uppercase;
+        }
+
+        select { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            background: #1e293b; 
+            color: #fff !important; 
+            border: 1px solid #334155; 
+            transition: all 0.3s;
+            outline: none;
+            cursor: pointer;
+        }
+        select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+        /* Main Content */
+        .main-content { flex-grow: 1; padding: 40px; overflow-y: auto; gap: 30px; display: flex; flex-direction: column; }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header-section h1 { font-size: 1.75rem; font-weight: 800; color: #1e293b; letter-spacing: -0.03em; }
+
+        /* Modern Tabs */
+        .nav-tabs { background: #f1f5f9; padding: 6px; border-radius: 14px; display: flex; gap: 4px; }
+        .nav-btn { 
+            padding: 10px 24px; 
+            border-radius: 10px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            transition: all 0.3s; 
+            color: #64748b;
+            background: transparent;
+        }
+        .nav-active { background: white; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        /* KPI Cards */
+        .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .kpi-card { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 20px; 
+            box-shadow: var(--card-shadow); 
+            border: var(--card-border);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .kpi-card:hover { transform: translateY(-5px); }
+        .kpi-card h4 { margin: 0; color: #64748b; font-size: 0.85rem; font-weight: 600; }
+        .kpi-card p { margin: 12px 0 0; font-size: 1.8rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+
+        /* Chart Cards */
+        .card { 
+            background: white; 
+            border-radius: 24px; 
+            padding: 30px; 
+            box-shadow: var(--card-shadow); 
+            border: var(--card-border); 
+        }
+
+        /* Table Styling */
+        .table-container { 
+            background: white; 
+            border-radius: 20px; 
+            overflow: auto; 
+            box-shadow: var(--card-shadow); 
+            border: var(--card-border); 
+            max-width: 100%; 
+            max-height: 60vh; 
+        }
+
+        table { 
+            width: max-content; 
+            border-collapse: separate; 
+            border-spacing: 0; 
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: #f8fafc;
+            padding: 16px; 
+            font-weight: 700; 
+            color: #475569; 
+            font-size: 0.8rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.02em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td { padding: 14px 16px; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9; color: #64748b; }
+        
+        .sticky-col { 
+            position: sticky; 
+            left: 0; 
+            z-index: 20; 
+            background: white !important; 
+            border-right: 2px solid #f1f5f9 !important;
+            font-weight: 700; 
+            color: #1e293b; 
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">Analytics<span>Pro</span></div>
+        <div class="status-box" id="fetchStatus">Initializing engine...</div>
+
+        <div style="margin-top: 10px;" class="filter-group">
+            <label>Reporting Period</label>
+            <select id="filterPeriode" onchange="applyFilters()">
+                <option value="">-- Select Period --</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Regional Branch</label>
+            <select id="filterBranch" onchange="applyFilters()"><option value="all">All Branches</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Product Service</label>
+            <select id="filterService" onchange="applyFilters()"><option value="all">All Services</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Customer Vintage</label>
+            <select id="filterVintage" onchange="applyFilters()"><option value="all">All Groups</option></select>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-section">
+            <div>
+                <h1>Executive Insights</h1>
+                <p style="color: #64748b; margin: 5px 0 0; font-size: 0.9rem;">Real-time monitoring of customer freeze activity</p>
+            </div>
+            <div class="nav-tabs">
+                <button onclick="switchPage(1)" id="btn1" class="nav-btn nav-active">Monitoring</button>
+                <button onclick="switchPage(2)" id="btn2" class="nav-btn">Cohort Analysis</button>
+            </div>
+        </div>
+
+        <div id="dashboardContent" style="display: none;">
+            <div id="page1">
+                <div class="kpi-container">
+                    <div class="kpi-card"><h4>Total Freeze</h4><p id="statTotal">0</p></div>
+                    <div class="kpi-card">
+                        <h4>Active Recovery</h4>
+                        <p style="color: var(--success)"><span id="statActive">0</span> <span id="statActivePct" style="font-size:0.75rem; background:#d1fae5; padding:4px 8px; border-radius:8px; font-weight:700;">0%</span></p>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Churn Rate</h4>
+                        <p style="color: var(--danger)"><span id="statChurn">0</span> <span id="statChurnPct" style="font-size:0.75rem; background:#fee2e2; padding:4px 8px; border-radius:8px; font-weight:700;">0%</span></p>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Outstanding</h4>
+                        <p style="color: var(--primary)"><span id="statOutstanding">0</span> <span id="statOutPct" style="font-size:0.75rem; background:var(--primary-light); padding:4px 8px; border-radius:8px; font-weight:700;">0%</span></p>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top:25px; height: 400px;">
+                    <h4 style="margin: 0 0 20px 0; font-size: 1rem;">Daily Status Trends</h4>
+                    <canvas id="mainChart"></canvas>
+                </div>
+
+                <div class="table-container" style="margin-top:25px;">
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col">Date</th>
+                                <th>Active</th>
+                                <th>Churn</th>
+                                <th>Outstanding</th>
+                                <th>Total Cases</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody1"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page2" style="display: none;">
+                <div class="table-container">
+                    <table id="cohortTable"></table>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 25px;">
+                    <div class="card" style="height: 450px;">
+                        <h4 style="margin: 0 0 20px 0; font-size: 1rem; color: #64748b;">Total Recovery Progress (H+0 to H+30)</h4>
+                        <canvas id="recoveryBarChart"></canvas>
+                    </div>
+
+                    <div class="card" style="height: 450px;">
+                        <h4 style="margin: 0 0 20px 0; font-size: 1rem; color: #64748b;">Accumulated Payment vs Outstanding (Trend)</h4>
+                        <canvas id="accumulationChart"></canvas>
+                    </div>
+                    
+                    <div class="card" style="height: 450px;">
+                        <h4 style="margin: 0 0 20px 0; font-size: 1rem; color: #64748b;">Daily Outstanding Sisa</h4>
+                        <canvas id="cohortChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="emptyPlaceholder" class="empty-state" style="text-align: center; padding-top: 100px;">
+            <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;">📉</div>
+            <h3 style="color: #64748b;">Waiting for data...</h3>
+            <p>Please select a period from the sidebar to generate insights.</p>
+        </div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        let masterRecords = [];
+        let charts = { main: null, cohort: null, accumulation: null, recoveryBar: null };
+
+        const githubFiles = [
+            "https://raw.githubusercontent.com/AlvyFahmy/customer_freeze/main/Freeze_Jan-2026.xlsx",
+            "https://raw.githubusercontent.com/AlvyFahmy/customer_freeze/main/Freeze_Feb-2026.xlsx",
+            "https://raw.githubusercontent.com/AlvyFahmy/customer_freeze/main/Freeze_Mar-2026.xlsx",
+            "https://raw.githubusercontent.com/AlvyFahmy/customer_freeze/main/Freeze_Apr-2026.xlsx"
+        ];
+
+        async function initData() {
+            const status = document.getElementById('fetchStatus');
+            try {
+                for (let url of githubFiles) {
+                    const res = await fetch(url);
+                    const buf = await res.arrayBuffer();
+                    const wb = XLSX.read(buf, { type: 'array' });
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    masterRecords = [...masterRecords, ...json.map(r => {
+                        const d = parseExcelDate(r['Frozen Date']);
+                        return { ...r, _d: d, _m: getMonthKey(d), _fmt: formatShortDate(d) };
+                    })];
+                }
+                status.innerText = "● Data Connection Live";
+                status.style.color = "#10b981";
+                updateFilters();
+            } catch (e) {
+                status.innerText = "● Connection Failed";
+                status.style.color = "#ef4444";
+            }
+        }
+
+        function parseExcelDate(v) {
+            let d = typeof v === 'number' ? new Date(Math.round((v - 25569) * 86400 * 1000)) : new Date(v);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function formatShortDate(d) {
+            if(!d) return '-';
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${d.getDate()} ${months[d.getMonth()]}`;
+        }
+
+        function getMonthKey(d) { return d ? d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : '-'; }
+
+        function updateFilters() {
+            const months = [...new Set(masterRecords.map(r => r._m))].filter(v => v !== '-');
+            const branches = [...new Set(masterRecords.map(r => r['Branch']))].filter(Boolean).sort();
+            const services = [...new Set(masterRecords.map(r => r['Service Type']))].filter(Boolean).sort();
+            const vintages = [...new Set(masterRecords.map(r => r['Vintage Group']))].filter(Boolean).sort();
+
+            document.getElementById('filterPeriode').innerHTML = `<option value="">-- Choose --</option>` + months.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('filterBranch').innerHTML = `<option value="all">All Branches</option>` + branches.map(b => `<option value="${b}">${b}</option>`).join('');
+            document.getElementById('filterService').innerHTML = `<option value="all">All Services</option>` + services.map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('filterVintage').innerHTML = `<option value="all">All Groups</option>` + vintages.map(v => `<option value="${v}">${v}</option>`).join('');
+        }
+
+        function applyFilters() {
+            const fP = document.getElementById('filterPeriode').value;
+            if (!fP) {
+                document.getElementById('dashboardContent').style.display = 'none';
+                document.getElementById('emptyPlaceholder').style.display = 'block';
+                return;
+            }
+            document.getElementById('dashboardContent').style.display = 'block';
+            document.getElementById('emptyPlaceholder').style.display = 'none';
+
+            const fB = document.getElementById('filterBranch').value;
+            const fS = document.getElementById('filterService').value;
+            const fV = document.getElementById('filterVintage').value;
+
+            const filtered = masterRecords.filter(r => 
+                (r._m === fP) && 
+                (fB === 'all' || r['Branch'] === fB) &&
+                (fS === 'all' || r['Service Type'] === fS) &&
+                (fV === 'all' || r['Vintage Group'] === fV)
+            );
+
+            const agg = {};
+            filtered.forEach(r => {
+                const k = r._fmt;
+                if(!agg[k]) agg[k] = { label: k, active: 0, churn: 0, total: 0, out: 0, sisa: Array(31).fill(0), raw: r._d };
+                agg[k].total++;
+                const status = (r['Customer Status'] || '').toLowerCase();
+                if(status === 'active') agg[k].active++;
+                else if(status === 'churn') agg[k].churn++;
+                else agg[k].out++;
+                const hPaid = r['Frozen (H+Paid)'];
+                for(let i=0; i<=30; i++) { if(hPaid === undefined || hPaid === null || hPaid > i) agg[k].sisa[i]++; }
+            });
+
+            const sorted = Object.values(agg).sort((a,b) => a.raw - b.raw);
+            renderPage1(sorted);
+            renderPage2(sorted);
+        }
+
+        function renderPage1(data) {
+            const tb = document.getElementById('tableBody1');
+            tb.innerHTML = "";
+            let sums = {a:0, c:0, t:0, o:0};
+            data.forEach(d => {
+                sums.a += d.active; sums.c += d.churn; sums.t += d.total; sums.o += d.out;
+                tb.innerHTML += `<tr><td class="sticky-col">${d.label}</td><td>${d.active}</td><td>${d.churn}</td><td>${d.out}</td><td style="font-weight:700">${d.total}</td></tr>`;
+            });
+
+            document.getElementById('statTotal').innerText = sums.t.toLocaleString();
+            document.getElementById('statActive').innerText = sums.a.toLocaleString();
+            document.getElementById('statActivePct').innerText = (sums.t > 0 ? ((sums.a/sums.t)*100).toFixed(1) : 0) + '%';
+            document.getElementById('statChurn').innerText = sums.c.toLocaleString();
+            document.getElementById('statChurnPct').innerText = (sums.t > 0 ? ((sums.c/sums.t)*100).toFixed(1) : 0) + '%';
+            document.getElementById('statOutstanding').innerText = sums.o.toLocaleString();
+            document.getElementById('statOutPct').innerText = (sums.t > 0 ? ((sums.o/sums.t)*100).toFixed(1) : 0) + '%';
+            
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if(charts.main) charts.main.destroy();
+
+            const gradActive = ctx.createLinearGradient(0, 0, 0, 400);
+            gradActive.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+            gradActive.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+            charts.main = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.label),
+                    datasets: [
+                        { label: 'Active', data: data.map(d => d.active), borderColor: '#10b981', fill: true, backgroundColor: gradActive, tension: 0.4 },
+                        { label: 'Churn', data: data.map(d => d.churn), borderColor: '#f43f5e', fill: false, tension: 0.4, borderDash: [5, 5] }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', align: 'end' }, datalabels: { display: false } },
+                    scales: { y: { border: { display: false }, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        function renderPage2(data) {
+            const table = document.getElementById('cohortTable');
+            let hCols = Array.from({length:31}, (_,i)=>`<th>H+${i}</th>`).join('');
+            let html = `<thead><tr><th class="sticky-col">Frozen Date</th><th style="background:#f1f5f9">Total</th>${hCols}<th style="background:#fee2e2; color:#f43f5e">CHURN</th></tr></thead><tbody>`;
+
+            let hSumSisa = Array(31).fill(0), grandTotal = 0, grandChurn = 0;
+            const fP = document.getElementById('filterPeriode').value;
+            const fB = document.getElementById('filterBranch').value;
+            
+            data.forEach(d => {
+                grandTotal += d.total;
+                const rowChurnCount = masterRecords.filter(r => 
+                    r._fmt === d.label && 
+                    r._m === fP &&
+                    (r['Customer Status'] || '').toLowerCase() === 'churn' &&
+                    (fB === 'all' || r['Branch'] === fB)
+                ).length;
+                
+                grandChurn += rowChurnCount;
+
+                html += `<tr><td class="sticky-col">${d.label}</td><td style="font-weight:700">${d.total}</td>`;
+                d.sisa.forEach((v, i) => { 
+                    hSumSisa[i] += v;
+                    const pct = d.total > 0 ? (v/d.total) : 0;
+                    let opacity = pct.toFixed(1);
+                    let bg = pct > 0 ? `rgba(99, 102, 241, ${opacity})` : '#fff';
+                    let color = pct > 0.5 ? '#fff' : '#64748b';
+                    html += `<td style="background:${bg}; color:${color}">${v}</td>`;
+                });
+                html += `<td style="font-weight:700; color:#f43f5e; background:#fff1f2; text-align:center">${rowChurnCount}</td></tr>`;
+            });
+
+            html += `<tr style="background:#0f172a; color:#fff"><td class="sticky-col" style="background:#0f172a !important; color:#fff">TOTAL SISA</td><td>${grandTotal}</td>`;
+            hSumSisa.forEach(v => html += `<td>${v}</td>`);
+            html += `<td style="background:#be123c; color:#fff; text-align:center">${grandChurn}</td></tr></tbody>`;
+            table.innerHTML = html;
+
+            const hSumPaid = hSumSisa.map(v => grandTotal - v);
+            const xLabels = Array.from({length:31}, (_,i)=>`H+${i}`);
+
+            // --- RECOVERY BAR CHART ---
+            const ctxBar = document.getElementById('recoveryBarChart').getContext('2d');
+            if(charts.recoveryBar) charts.recoveryBar.destroy();
+            charts.recoveryBar = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: xLabels,
+                    datasets: [
+                        { label: 'Paid', data: hSumPaid, backgroundColor: '#10b981', borderRadius: 4 },
+                        { label: 'Sisa', data: hSumSisa, backgroundColor: '#f43f5e', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'top' },
+                        datalabels: {
+                            display: (context) => context.dataset.data[context.dataIndex] > 0,
+                            color: '#fff', font: { weight: 'bold', size: 10 },
+                            formatter: (value, context) => {
+                                const total = context.chart.data.datasets[0].data[context.dataIndex] + context.chart.data.datasets[1].data[context.dataIndex];
+                                return total === 0 ? '0%' : ((value / total) * 100).toFixed(1) + '%';
+                            }
+                        }
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+                }
+            });
+
+            // --- ACCUMULATION CHART ---
+            const ctxAcc = document.getElementById('accumulationChart').getContext('2d');
+            if(charts.accumulation) charts.accumulation.destroy();
+            charts.accumulation = new Chart(ctxAcc, {
+                type: 'line',
+                data: {
+                    labels: xLabels,
+                    datasets: [
+                        { label: 'Cumulative Paid', data: hSumPaid, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'Outstanding Sisa', data: hSumSisa, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false } } }
+            });
+
+            // --- COHORT CHART ---
+            const ctxCohort = document.getElementById('cohortChart').getContext('2d');
+            if(charts.cohort) charts.cohort.destroy();
+            charts.cohort = new Chart(ctxCohort, {
+                type: 'line',
+                data: {
+                    labels: xLabels,
+                    datasets: [{ label: 'Sisa', data: hSumSisa, borderColor: '#6366f1', borderWidth: 4, pointRadius: 4, pointBackgroundColor: '#fff', fill: false }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            display: true, align: 'top', backgroundColor: '#fbbf24', color: '#000', borderRadius: 4, font: { weight: 'bold' },
+                            formatter: (v) => v >= 1000 ? (v/1000).toFixed(1) + 'K' : v
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchPage(p) {
+            [1,2].forEach(i => {
+                document.getElementById(`page${i}`).style.display = i === p ? 'block' : 'none';
+                document.getElementById(`btn${i}`).className = `nav-btn ${i === p ? 'nav-active' : ''}`;
+            });
+        }
+
+        window.onload = initData;
+    </script>
+</body>
+</html>
